@@ -29,7 +29,7 @@ public class PutYourTestCodeInThisDirectoryTest
     }
 
     @Test
-    public void createForecastCachingforDuplicateQueries() throws Exception
+    public void createForecastCachingForDuplicateQueries() throws Exception
     {
         when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
 
@@ -57,32 +57,48 @@ public class PutYourTestCodeInThisDirectoryTest
     {
         Clock clock = mock(Clock.class);
 
-        ForecasterClient client1 = new ForecasterClient(wrapper, 2, clock);
+        ForecasterClient client = new ForecasterClient(wrapper, 4, clock);
 
         when(clock.getTimeMs()).thenReturn(1L);
 
         when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
+        when(wrapper.forecastFor(Region.LONDON, Day.TUESDAY)).thenReturn(new Forecast("rainy", 8));
 
-        client1.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.TUESDAY);
 
         // 1 hour passed
-        when(clock.getTimeMs()).thenReturn(client1.TTL + 5L);
+        when(clock.getTimeMs()).thenReturn(client.TTL + 5L);
 
-        client1.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.TUESDAY);
 
         verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
+        verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.TUESDAY);
     }
 
     @Test
     public void testNoCacheBehavior() throws Exception
     {
-        ForecasterClient client1 = new ForecasterClient(wrapper, 0, clock);
+        ForecasterClient client = new ForecasterClient(wrapper, 0, clock);
 
         when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
 
-        client1.forecastFor(Region.LONDON, Day.MONDAY);
-        client1.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
 
         verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
+    }
+
+    @Test
+    public void testShouldNotCacheNullForecast() throws Exception
+    {
+        when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(null);
+
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+
+        verify(wrapper, times(3)).forecastFor(Region.LONDON, Day.MONDAY);
     }
 }

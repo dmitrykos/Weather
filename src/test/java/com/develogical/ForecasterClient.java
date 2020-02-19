@@ -4,15 +4,15 @@ import com.weather.Day;
 import com.weather.Forecast;
 import com.weather.Region;
 
-import java.sql.Time;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class ForecasterClient
 {
     public static final long TTL = 60*60;
 
-    class ForecastEntry
+    private class ForecastEntry
     {
         long guid;
         Forecast forecast;
@@ -26,64 +26,77 @@ public class ForecasterClient
         }
     }
 
-    public ForecasterInterface forecaster = null;
-    ArrayList<ForecastEntry> cache = new ArrayList<ForecastEntry>();
-    int maxCacheSize = 0;
-    Clock clock = null;
+    // source: http://www.baeldung.com/java-linked-hashmap
+    private class LimitedHashMap<K, V> extends LinkedHashMap<K, V>
+    {
+        private int maxSize;
+
+        public LimitedHashMap(int maxSize)
+        {
+            super(16, 0.75f, true);
+            this.maxSize = maxSize;
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry eldest)
+        {
+            return (size() >= maxSize);
+        }
+    }
+
+    private ForecasterInterface forecaster = null;
+    private LimitedHashMap<Long, ForecastEntry> cache = null;
+    private int maxCacheSize = 0;
+    private Clock clock = null;
 
     public ForecasterClient(ForecasterInterface forecaster, int maxCacheSize, Clock clock)
     {
         this.forecaster = forecaster;
         this.maxCacheSize = maxCacheSize;
         this.clock = clock;
+
+        cache = new LimitedHashMap<Long, ForecastEntry>(maxCacheSize);
     }
 
     private void removeExpiredEntries()
     {
-        ArrayList<ForecastEntry> queue = new ArrayList<ForecastEntry>();
+        if (cache.isEmpty())
+            return;
+
+        ArrayList<Long> queue = new ArrayList<Long>();
 
         long timeNow = clock.getTimeMs();
-        for (ForecastEntry itr : cache)
+        for (ForecastEntry itr : cache.values())
         {
             if (timeNow > (itr.timestamp + TTL))
-                queue.add(itr);
+                queue.add(itr.guid);
         }
 
-        cache.removeAll(queue);
+        for (Long itr : queue)
+            cache.remove(itr);
     }
 
     public Forecast forecastFor(Region region, Day day) {
 
         long guid = getHashValue(region, day);
 
-        if (!cache.isEmpty() && (cache.size() >= maxCacheSize))
-            cache.remove(0);
-
         removeExpiredEntries();
 
-        Forecast forecast = null;
-        for (ForecastEntry itr : cache)
+        ForecastEntry entry = cache.get(guid);
+        if (entry == null)
         {
-            if ((long)itr.guid == (long)guid)
-            {
-                forecast = itr.forecast;
-                break;
-            }
+            Forecast forecast = forecaster.forecastFor(region, day);
+            if (forecast == null)
+                return null;
+
+            cache.put(guid, entry = new ForecastEntry(guid, forecast));
         }
 
-        if (forecast == null)
-        {
-            forecast = forecaster.forecastFor(region, day);
-
-            cache.add(new ForecastEntry(guid, forecast));
-        }
-
-        return forecast;
+        return entry.forecast;
     }
 
     private long getHashValue(Region region, Day day)
     {
-        return (long)region.hashCode() | ((long)day.hashCode()) << 32;
+        return (long)region.hashCode() | ((long)day.hashCode() << 32);
     }
-
 }
