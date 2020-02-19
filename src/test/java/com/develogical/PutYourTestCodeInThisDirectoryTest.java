@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 public class PutYourTestCodeInThisDirectoryTest {
     ForecasterInterface wrapper = mock(ForecasterInterface.class);
-    ForecasterClient client = new ForecasterClient(wrapper);
+    ForecasterClient client = new ForecasterClient(wrapper, 2);
 
     @Test
     public void createForecastClientUsesWrapperDelegate() throws Exception
@@ -37,6 +37,16 @@ public class PutYourTestCodeInThisDirectoryTest {
         verify(wrapper, times(1)).forecastFor(Region.LONDON, Day.MONDAY);
     }
 
+    @Test
+    public void testCacheExpiry() throws Exception
+    {
+        when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
+        when(wrapper.forecastFor(Region.LONDON, Day.FRIDAY)).thenReturn(new Forecast("sunny", 11));
 
+        client.forecastFor(Region.LONDON, Day.MONDAY);
+        client.forecastFor(Region.LONDON, Day.FRIDAY);
+        client.forecastFor(Region.LONDON, Day.MONDAY);
 
+        verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
+    }
 }
