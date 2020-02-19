@@ -49,4 +49,25 @@ public class PutYourTestCodeInThisDirectoryTest {
 
         verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
     }
+
+    @Test
+    public void testCacheExpiryAfterHour() throws Exception
+    {
+        Clock clock = mock(Clock.class);
+
+        ForecasterClient client1 = new ForecasterClient(wrapper, 2, clock);
+
+        when(clock.getTimeMs()).thenReturn(1L);
+
+        when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
+
+        client1.forecastFor(Region.LONDON, Day.MONDAY);
+
+        // 1 hour passed
+        when(clock.getTimeMs()).thenReturn(client1.TTL + 5L);
+
+        client1.forecastFor(Region.LONDON, Day.MONDAY);
+
+        verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
+    }
 }
