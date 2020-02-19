@@ -11,9 +11,11 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.*;
 
-public class PutYourTestCodeInThisDirectoryTest {
+public class PutYourTestCodeInThisDirectoryTest
+{
+    ClockImpl clock = new ClockImpl();
     ForecasterInterface wrapper = mock(ForecasterInterface.class);
-    ForecasterClient client = new ForecasterClient(wrapper, 2, new ClockImpl());
+    ForecasterClient client = new ForecasterClient(wrapper, 2, clock);
 
     @Test
     public void createForecastClientUsesWrapperDelegate() throws Exception
@@ -66,6 +68,19 @@ public class PutYourTestCodeInThisDirectoryTest {
         // 1 hour passed
         when(clock.getTimeMs()).thenReturn(client1.TTL + 5L);
 
+        client1.forecastFor(Region.LONDON, Day.MONDAY);
+
+        verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);
+    }
+
+    @Test
+    public void testNoCacheBehavior() throws Exception
+    {
+        ForecasterClient client1 = new ForecasterClient(wrapper, 0, clock);
+
+        when(wrapper.forecastFor(Region.LONDON, Day.MONDAY)).thenReturn(new Forecast("sunny", 10));
+
+        client1.forecastFor(Region.LONDON, Day.MONDAY);
         client1.forecastFor(Region.LONDON, Day.MONDAY);
 
         verify(wrapper, times(2)).forecastFor(Region.LONDON, Day.MONDAY);

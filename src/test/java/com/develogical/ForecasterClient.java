@@ -18,7 +18,8 @@ public class ForecasterClient
         Forecast forecast;
         long timestamp;
 
-        public ForecastEntry(long guid, Forecast forecast) {
+        public ForecastEntry(long guid, Forecast forecast)
+        {
             this.guid = guid;
             this.forecast = forecast;
             this.timestamp = clock.getTimeMs();
@@ -30,18 +31,12 @@ public class ForecasterClient
     int maxCacheSize = 0;
     Clock clock = null;
 
-    ForecasterClient(ForecasterInterface wrapper)
+    public ForecasterClient(ForecasterInterface forecaster, int maxCacheSize, Clock clock)
     {
-        forecaster = wrapper;
-    }
-
-   public ForecasterClient(ForecasterInterface wrapper, int maxCacheSize, Clock clock)
-    {
-        forecaster = wrapper;
+        this.forecaster = forecaster;
         this.maxCacheSize = maxCacheSize;
         this.clock = clock;
     }
-
 
     private void removeExpiredEntries()
     {
@@ -61,7 +56,7 @@ public class ForecasterClient
 
         long guid = getHashValue(region, day);
 
-        if (cache.size() >= maxCacheSize)
+        if (!cache.isEmpty() && (cache.size() >= maxCacheSize))
             cache.remove(0);
 
         removeExpiredEntries();
