@@ -35,13 +35,7 @@ public class ForecasterClient
         forecaster = wrapper;
     }
 
-    public ForecasterClient(ForecasterInterface wrapper, int maxCacheSize)
-    {
-        forecaster = wrapper;
-        this.maxCacheSize = maxCacheSize;
-    }
-
-    public ForecasterClient(ForecasterInterface wrapper, int maxCacheSize, Clock clock)
+   public ForecasterClient(ForecasterInterface wrapper, int maxCacheSize, Clock clock)
     {
         forecaster = wrapper;
         this.maxCacheSize = maxCacheSize;

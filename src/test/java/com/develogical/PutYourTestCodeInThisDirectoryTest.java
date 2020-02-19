@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 public class PutYourTestCodeInThisDirectoryTest {
     ForecasterInterface wrapper = mock(ForecasterInterface.class);
-    ForecasterClient client = new ForecasterClient(wrapper, 2);
+    ForecasterClient client = new ForecasterClient(wrapper, 2, new ClockImpl());
 
     @Test
     public void createForecastClientUsesWrapperDelegate() throws Exception
