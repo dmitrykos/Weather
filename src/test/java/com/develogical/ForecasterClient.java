@@ -16,23 +16,19 @@ public class ForecasterClient
         forecaster = wrapper;
     }
 
-    public Forecast forecastFor(Region region, Day day)
-    {
-        if (isCached(region, day))
+    public Forecast forecastFor(Region region, Day day) {
+
+        Long guid = getHashValue(region, day);
+
+        Forecast forecast = cache.get(guid);
+
+        if (forecast == null)
         {
-            //cache
+            forecast = forecaster.forecastFor(region, day);
+            cache.put(guid, forecast);
         }
 
-        return forecaster.forecastFor(region, day);
-    }
-
-    private boolean isCached(Region region, Day day)
-    {
-        long hash = getHashValue(region, day);
-
-
-
-        return false;
+        return forecast;
     }
 
     private Long getHashValue(Region region, Day day)
